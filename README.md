@@ -33,7 +33,6 @@ Regras básicas:
 --  TDD, BDD, IT 
 - Ter artillery -> https://www.artillery.io/
 
-
 ## Estrutura
 
 Estrutura básica da nossa pasta de projetos:
