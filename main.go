@@ -1,6 +1,9 @@
 package main
 
-import "wehook-consumer/config"
+import (
+	"wehook-consumer/config"
+	seed "wehook-consumer/database"
+)
 
 func main() {
 	database := config.NewDatabase("consumer.db", "sqlite", false)
@@ -13,6 +16,13 @@ func main() {
 
 	if err := database.Connect(); err != nil {
 		panic(err)
+	}
+
+	if database.Seed() {
+		seeder := seed.NewSeeder(database.GetDB())
+		if err := seeder.Run(); err != nil {
+			panic(err)
+		}
 	}
 
 }

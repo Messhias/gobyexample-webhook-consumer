@@ -8,6 +8,12 @@ import (
 func TestItSeederRun_Success(t *testing.T) {
 	// arrange
 	err := openDatabase()
+	defer func() {
+		err := closeDatabase()
+		if err != nil {
+			t.Errorf("%v", err)
+		}
+	}()
 	if err != nil {
 		t.Fatalf("failed to open database: %v", err)
 	}
@@ -19,13 +25,5 @@ func TestItSeederRun_Success(t *testing.T) {
 	// assert
 	if err != nil {
 		t.Fatalf("failed to run seeder: %v", err)
-	}
-
-	// act
-	err = closeDatabase()
-
-	// assert
-	if err != nil {
-		t.Errorf("%v", err)
 	}
 }

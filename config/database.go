@@ -13,6 +13,7 @@ type Database interface {
 	Connect() error
 	Close() error
 	GetDB() *gorm.DB
+	Seed() bool
 }
 
 type database struct {
@@ -20,6 +21,10 @@ type database struct {
 	name   string
 	Driver string
 	seed   bool
+}
+
+func (d *database) Seed() bool {
+	return d.seed
 }
 
 func (d *database) GetDB() *gorm.DB {
