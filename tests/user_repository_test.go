@@ -4,22 +4,30 @@ import (
 	"os"
 	"path"
 	"testing"
+	seed "wehook-consumer/database"
 	"wehook-consumer/repositories"
 )
 
 func TestGetAllUsers_Success(t *testing.T) {
 	// arrange
-	err := openDatabase()
-	if err != nil {
-		t.Errorf("%v", err)
-	}
-
 	defer func() {
 		err := closeDatabase()
 		if err != nil {
 			t.Errorf("%v", err)
 		}
 	}()
+
+	err := openDatabase()
+	if err != nil {
+		t.Errorf("%v", err)
+	}
+
+	if database.Seed() {
+		seeder := seed.NewSeeder(database.GetDB())
+		if err := seeder.Run(); err != nil {
+			panic(err)
+		}
+	}
 
 	repo := repositories.NewUserRepository(database.GetDB())
 
