@@ -3,7 +3,7 @@ package main
 import "wehook-consumer/config"
 
 func main() {
-	database := config.NewDatabase("consumer.db", "sqlite")
+	database := config.NewDatabase("consumer.db", "sqlite", false)
 	defer func(database config.Database) {
 		err := database.Close()
 		if err != nil {

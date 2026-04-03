@@ -5,16 +5,15 @@ import (
 	"wehook-consumer/config"
 )
 
-func TestCanConnectDatabase_Success(t *testing.T) {
-	database := config.NewDatabase("test.db", "sqlite")
+var database config.Database
 
+func TestCanConnectDatabase_Success(t *testing.T) {
 	if err := database.Connect(); err != nil {
 		t.Errorf("Can't connect to database: %v", err)
 	}
 }
 
 func TestCanCloseDatabaseConnection_Success(t *testing.T) {
-	database := config.NewDatabase("test.db", "sqlite")
 
 	if err := database.Connect(); err != nil {
 		t.Errorf("Can't connect to database: %v", err)
@@ -26,9 +25,13 @@ func TestCanCloseDatabaseConnection_Success(t *testing.T) {
 }
 
 func TestCanConnectDatabase_Fail(t *testing.T) {
-	database := config.NewDatabase("test.db", "xpo")
+	databaseToFail := config.NewDatabase("test.db", "xpo", false)
 
-	if err := database.Connect(); err == nil {
+	if err := databaseToFail.Connect(); err == nil {
 		t.Error("Something went wrong, should throw a error")
 	}
+}
+
+func init() {
+	database = config.NewDatabase("test.db", "sqlite", false)
 }
