@@ -7,20 +7,24 @@ import (
 
 func TestGetAllUsers_Success(t *testing.T) {
 	// arrange
-	err, _ := openDatabase()
+	err := openDatabase()
 	if err != nil {
 		t.Errorf("%v", err)
 	}
 
+	// act
 	repo := repositories.NewUserRepository(database.GetDB())
 	_, err = repo.GetAll()
 
+	// assert
 	if err != nil {
 		t.Errorf("%v", err)
 	}
 
+	// act
 	err = closeDatabase()
 
+	// assert
 	if err != nil {
 		t.Errorf("%v", err)
 	}
@@ -35,10 +39,10 @@ func closeDatabase() error {
 	return nil
 }
 
-func openDatabase() (error, bool) {
+func openDatabase() error {
 	err := database.Connect()
 	if err != nil {
-		return nil, true
+		return nil
 	}
-	return err, false
+	return err
 }
