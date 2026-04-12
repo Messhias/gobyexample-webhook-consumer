@@ -7,8 +7,6 @@ import (
 	"wehook-consumer/config"
 )
 
-var database config.Database
-
 func TestCanConnectDatabase_Success(t *testing.T) {
 	defer func() {
 		err := closeDatabase()
@@ -53,5 +51,5 @@ func TestCanConnectDatabase_Fail(t *testing.T) {
 }
 
 func init() {
-	database = config.NewDatabase("test.db", "sqlite", false)
+	database = config.NewDatabase("test.db", "sqlite", true)
 }
