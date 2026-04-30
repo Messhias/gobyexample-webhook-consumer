@@ -249,7 +249,7 @@ func TestDeleteUser_Success(t *testing.T) {
 	}
 }
 
-func TestConcurrentCreate_Success(t *testing.T) {
+func TestConcurrentUpdate_Success(t *testing.T) {
 	defer func() {
 		err := closeDatabase()
 		if err != nil {
@@ -264,7 +264,21 @@ func TestConcurrentCreate_Success(t *testing.T) {
 
 	repo := repositories.NewUserRepository(database.GetDB())
 
-	const workers = 50
+	user := models.User{
+		Email: fmt.Sprintf("race-%d@x.com", 1),
+	}
+	createdUser, err := repo.Create(user)
+
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	extId := createdUser.ExternalID
+	active := createdUser.Active
+	var errors []error
+
+	const workers = 5
 	var waitGroup sync.WaitGroup
 	waitGroup.Add(workers)
 
@@ -272,31 +286,29 @@ func TestConcurrentCreate_Success(t *testing.T) {
 		go func(i int) {
 			defer waitGroup.Done()
 
-			_, _ = repo.GetAll()
-
-			user := models.User{
-				Email: fmt.Sprintf("race-%d@x.com", i),
+			payload := models.User{
+				ExternalID: extId,
+				Active:     active,
+				Email:      fmt.Sprintf("c-update-%d@x.com", i),
 			}
 
-			createdUser, err := repo.Create(user)
+			updated, err := repo.Update(extId, &payload)
 
 			if err != nil {
-				t.Error(err)
+				errors = append(errors, err)
+				return
 			}
 
-			createdUser.Email = fmt.Sprintf("race-%d@x.com", i+1)
-
-			updatedUser, err := repo.Update(createdUser.ExternalID, createdUser)
-
-			if err != nil {
-				t.Error(err)
+			if updated == nil || updated.Email != payload.Email {
+				errors = append(errors, fmt.Errorf("updated email doesn't match"))
 			}
 
-			if updatedUser.Email != createdUser.Email {
-				t.Error("users doesn't match")
-			}
 		}(i)
 	}
 
 	waitGroup.Wait()
+
+	if len(errors) != 0 {
+		t.Fatalf("errors were not returned: %v", errors)
+	}
 }

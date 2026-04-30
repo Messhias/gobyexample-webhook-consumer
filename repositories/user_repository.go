@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-	"sync"
 	"wehook-consumer/models"
 
 	"github.com/google/uuid"
@@ -23,7 +22,6 @@ type UserRepository interface {
 type userRepository struct {
 	database *gorm.DB
 	ctx      context.Context
-	mu       *sync.Mutex
 }
 
 func (u *userRepository) Update(id uuid.UUID, user *models.User) (*models.User, error) {
@@ -31,25 +29,28 @@ func (u *userRepository) Update(id uuid.UUID, user *models.User) (*models.User, 
 		return nil, errors.New("user is nil")
 	}
 
-	if id.String() == "" {
+	if id.String() == "" || id == uuid.Nil {
 		return nil, errors.New("user external id is empty")
 	}
 
-	var foundUser *models.User
+	if strings.TrimSpace(user.Email) == "" {
+		return nil, errors.New("user email is empty")
+	}
 
-	if err := u.database.Where("external_id = ?", id).First(&foundUser).Error; err != nil {
+	var existing *models.User
+
+	if err := u.database.WithContext(u.ctx).Where("external_id = ?", id.String()).First(&existing).Error; err != nil {
 		return nil, err
 	}
 
-	foundUser = user
+	existing.Email = strings.TrimSpace(user.Email)
+	existing.Active = user.Active
 
-	updatedUser, err := u.Update(user.ExternalID, user)
-
-	if err != nil {
+	if err := u.database.WithContext(u.ctx).Save(&existing).Error; err != nil {
 		return nil, err
 	}
 
-	return updatedUser, nil
+	return existing, nil
 }
 
 func (u *userRepository) Find(user *models.User) (*models.User, error) {
