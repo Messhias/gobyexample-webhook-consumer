@@ -12,7 +12,7 @@ import (
 )
 
 type UserRepository interface {
-	GetAll() ([]models.User, error)
+	GetAll() (*[]models.User, error)
 	Create(user models.User) (*models.User, error)
 	Delete(id uuid.UUID) (bool, error)
 	Find(user *models.User) (*models.User, error)
@@ -78,14 +78,14 @@ func (u userRepository) Create(user models.User) (*models.User, error) {
 	return &user, nil
 }
 
-func (u userRepository) GetAll() ([]models.User, error) {
+func (u userRepository) GetAll() (*[]models.User, error) {
 	users, err := gorm.G[models.User](u.database).Find(u.ctx)
 
 	if err != nil {
-		return []models.User{}, nil
+		return nil, err
 	}
 
-	return users, nil
+	return &users, nil
 }
 
 func NewUserRepository(database *gorm.DB) UserRepository {

@@ -24,7 +24,12 @@ func TestGetAllUsers_Success(t *testing.T) {
 		t.Errorf("%v", err)
 	}
 
-	if len(users) == 0 {
+	if users == nil {
+		t.Errorf("users is nil")
+		return
+	}
+
+	if len(*users) == 0 {
 		t.Error("no users found")
 	}
 }
