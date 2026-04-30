@@ -12,12 +12,23 @@ import (
 type Database interface {
 	Connect() error
 	Close() error
+	GetDB() *gorm.DB
+	Seed() bool
 }
 
 type database struct {
 	DB     *gorm.DB
 	name   string
 	Driver string
+	seed   bool
+}
+
+func (d *database) Seed() bool {
+	return d.seed
+}
+
+func (d *database) GetDB() *gorm.DB {
+	return d.DB
 }
 
 // Connect implements [Database].
@@ -82,12 +93,13 @@ func (d *database) runMigrations() error {
 	return nil
 }
 
-func NewDatabase(dbName string, driver string) Database {
+func NewDatabase(dbName string, driver string, seed bool) Database {
 	if driver == "" {
 		driver = "sqlite"
 	}
 	return &database{
 		name:   dbName,
 		Driver: driver,
+		seed:   seed,
 	}
 }
