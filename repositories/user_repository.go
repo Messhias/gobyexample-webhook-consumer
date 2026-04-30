@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
 	"wehook-consumer/models"
 
 	"github.com/google/uuid"
@@ -16,14 +17,42 @@ type UserRepository interface {
 	Create(user models.User) (*models.User, error)
 	Delete(id uuid.UUID) (bool, error)
 	Find(user *models.User) (*models.User, error)
+	Update(id uuid.UUID, user *models.User) (*models.User, error)
 }
 
 type userRepository struct {
 	database *gorm.DB
 	ctx      context.Context
+	mu       *sync.Mutex
 }
 
-func (u userRepository) Find(user *models.User) (*models.User, error) {
+func (u *userRepository) Update(id uuid.UUID, user *models.User) (*models.User, error) {
+	if user == nil {
+		return nil, errors.New("user is nil")
+	}
+
+	if id.String() == "" {
+		return nil, errors.New("user external id is empty")
+	}
+
+	var foundUser *models.User
+
+	if err := u.database.Where("external_id = ?", id).First(&foundUser).Error; err != nil {
+		return nil, err
+	}
+
+	foundUser = user
+
+	updatedUser, err := u.Update(user.ExternalID, user)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return updatedUser, nil
+}
+
+func (u *userRepository) Find(user *models.User) (*models.User, error) {
 	if user == nil {
 		return nil, errors.New("user is nil")
 	}
@@ -51,7 +80,7 @@ func (u userRepository) Find(user *models.User) (*models.User, error) {
 	return &found, nil
 }
 
-func (u userRepository) Delete(id uuid.UUID) (bool, error) {
+func (u *userRepository) Delete(id uuid.UUID) (bool, error) {
 	if rowsDeleted, err := gorm.G[models.User](u.database).
 		Where("external_id = ?", id.String()).
 		Delete(u.ctx); err != nil {
@@ -66,7 +95,7 @@ func (u userRepository) Delete(id uuid.UUID) (bool, error) {
 	return true, nil
 }
 
-func (u userRepository) Create(user models.User) (*models.User, error) {
+func (u *userRepository) Create(user models.User) (*models.User, error) {
 	if strings.TrimSpace(user.Email) == "" {
 		return nil, errors.New("email is required")
 	}
@@ -78,7 +107,7 @@ func (u userRepository) Create(user models.User) (*models.User, error) {
 	return &user, nil
 }
 
-func (u userRepository) GetAll() (*[]models.User, error) {
+func (u *userRepository) GetAll() (*[]models.User, error) {
 	users, err := gorm.G[models.User](u.database).Find(u.ctx)
 
 	if err != nil {

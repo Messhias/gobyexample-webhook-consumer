@@ -1,6 +1,8 @@
 package tests
 
 import (
+	"fmt"
+	"sync"
 	"testing"
 	"wehook-consumer/models"
 	"wehook-consumer/repositories"
@@ -245,4 +247,56 @@ func TestDeleteUser_Success(t *testing.T) {
 	if !deleted {
 		t.Error("could not delete user")
 	}
+}
+
+func TestConcurrentCreate_Success(t *testing.T) {
+	defer func() {
+		err := closeDatabase()
+		if err != nil {
+			t.Errorf("%v", err)
+		}
+	}()
+
+	// arrange
+	if err := OpenAndSeed(t, false); err != nil {
+		t.Fatal(err)
+	}
+
+	repo := repositories.NewUserRepository(database.GetDB())
+
+	const workers = 50
+	var waitGroup sync.WaitGroup
+	waitGroup.Add(workers)
+
+	for i := 0; i < workers; i++ {
+		go func(i int) {
+			defer waitGroup.Done()
+
+			_, _ = repo.GetAll()
+
+			user := models.User{
+				Email: fmt.Sprintf("race-%d@x.com", i),
+			}
+
+			createdUser, err := repo.Create(user)
+
+			if err != nil {
+				t.Error(err)
+			}
+
+			createdUser.Email = fmt.Sprintf("race-%d@x.com", i+1)
+
+			updatedUser, err := repo.Update(createdUser.ExternalID, createdUser)
+
+			if err != nil {
+				t.Error(err)
+			}
+
+			if updatedUser.Email != createdUser.Email {
+				t.Error("users doesn't match")
+			}
+		}(i)
+	}
+
+	waitGroup.Wait()
 }
